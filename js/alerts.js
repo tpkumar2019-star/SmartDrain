@@ -1,7 +1,7 @@
 // ============================================================
 // alerts.js — Alerts page: search/filter list + badge counter.
-// Alerts themselves are produced by simulation.js; this file
-// only renders state.alerts and reacts to clicks.
+// Active alerts are derived from current manhole status. Historical
+// recovery entries continue to come from simulation.js.
 // ============================================================
 
 import { state } from "./simulation.js";
@@ -22,16 +22,46 @@ const TITLES = {
   info: "Reading Recovered",
 };
 
+function activeAlerts() {
+  return state.manholes
+    .filter((m) => m.status === "CRITICAL" || m.status === "WARNING")
+    .map((m) => ({
+      id: `active-${m.manholeId}`,
+      severity: m.status.toLowerCase(),
+      manholeId: m.manholeId,
+      nodeId: m.nodeId,
+      area: m.area,
+      blockagePercentage: m.blockagePercentage,
+      distanceMeters: m.expectedPipeLength - m.measuredDistance,
+      message:
+        m.status === "CRITICAL"
+          ? `Estimated blockage is ${m.blockagePercentage}%. Immediate inspection recommended.`
+          : `Estimated blockage is ${m.blockagePercentage}%. Monitoring advised.`,
+      timestamp: m.lastUpdated,
+    }))
+    .sort((a, b) => {
+      const severityOrder = { critical: 0, warning: 1 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
+}
+
 function filteredAlerts() {
   const q = currentSearch.trim().toLowerCase();
-  return state.alerts.filter((a) => {
-    const matchesFilter =
-      currentFilter === "all" || a.severity === currentFilter;
+  const alerts =
+    currentFilter === "info"
+      ? state.alerts.filter((a) => a.severity === "info")
+      : activeAlerts().filter((a) => {
+          const matchesFilter =
+            currentFilter === "all" || a.severity === currentFilter;
+          return matchesFilter;
+        });
+
+  return alerts.filter((a) => {
     const matchesSearch =
       !q ||
       a.manholeId.toLowerCase().includes(q) ||
       a.area.toLowerCase().includes(q);
-    return matchesFilter && matchesSearch;
+    return matchesSearch;
   });
 }
 
@@ -40,9 +70,9 @@ export function renderAlertsList() {
   const countEl = document.getElementById("alertsCount");
   if (!list) return;
 
-  if (countEl) {
-    countEl.textContent = `${state.alerts.length} alert${state.alerts.length === 1 ? "" : "s"}`;
-  }
+  const active = activeAlerts();
+  if (countEl)
+    countEl.textContent = `${active.length} alert${active.length === 1 ? "" : "s"}`;
 
   const alerts = filteredAlerts();
   if (!alerts.length) {

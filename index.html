@@ -625,6 +625,87 @@
       </div>
     </div>
 
+    <!-- ============ MAP "VIEW DETAILS" MODAL (opens over the live map) ============ -->
+    <div class="modal-backdrop" id="dmBackdrop">
+      <div class="modal modal--details">
+        <button class="modal-close" id="dmClose" aria-label="Close">✕</button>
+
+        <div class="dm-header">
+          <div class="dm-header__title-row">
+            <h3 id="dmTitle">Manhole</h3>
+            <span class="badge" id="dmStatusBadge">Status</span>
+          </div>
+          <div class="dm-header__subtitle">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+            <span id="dmSubtitle">Zone, Hyderabad</span>
+          </div>
+        </div>
+
+        <div class="dm-grid">
+          <!-- LEFT: detailed info rows -->
+          <div class="dm-col" id="dmLeftCol"></div>
+
+          <!-- RIGHT: severity + progress + chart -->
+          <div class="dm-col">
+            <div class="dm-severity" id="dmSeverityBox">
+              <span class="dm-severity__icon" id="dmSeverityIcon"></span>
+              <div>
+                <div class="dm-severity__title" id="dmSeverityTitle">
+                  STATUS
+                </div>
+                <div class="dm-severity__msg" id="dmSeverityMsg">Message</div>
+              </div>
+            </div>
+
+            <div class="dm-block">
+              <div class="dm-block__label">Distance vs Blockage</div>
+              <div class="dm-progress">
+                <div
+                  class="dm-progress__fill"
+                  id="dmProgressFill"
+                  style="width: 0%"
+                ></div>
+              </div>
+              <div class="dm-progress__stats">
+                <div>
+                  <div class="dm-progress__stat-label">
+                    Obstruction distance
+                  </div>
+                  <div class="dm-progress__stat-value" id="dmObstructionValue">
+                    0 m
+                  </div>
+                </div>
+                <div class="dm-progress__stat--right">
+                  <div class="dm-progress__stat-label">Estimated blockage</div>
+                  <div class="dm-progress__stat-value" id="dmBlockageValue">
+                    0%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dm-block">
+              <div class="dm-block__label">Recent Readings</div>
+              <div class="dm-chart" id="dmChartHost"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dm-footer">
+          <button class="btn btn--ghost" id="dmViewOnMap">View on Map</button>
+          <button class="btn btn--primary" id="dmCloseFooter">Close</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script type="module" src="js/app.js"></script>
     <script>

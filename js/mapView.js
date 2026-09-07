@@ -8,7 +8,9 @@ import { timeAgo } from "./utils.js";
 
 let map = null;
 const markers = new Map(); // manholeId -> L.Marker
+let selectedManholeId = null;
 let onViewDetails = () => {};
+let onOpenDetails = () => {}; // fired by the popup's "View Details" button -> opens the details modal
 
 const PIN_COLORS = {
   CLEAR: "#1e9e5a",
@@ -29,6 +31,18 @@ function pinIcon(status, pulse = false) {
   });
 }
 
+function refreshMarkerIcons() {
+  markers.forEach((marker, manholeId) => {
+    const manhole = marker.manhole;
+    marker.setIcon(
+      pinIcon(
+        manhole.status,
+        manhole.status === "CRITICAL" || manholeId === selectedManholeId,
+      ),
+    );
+  });
+}
+
 function popupHTML(m) {
   return `
     <div class="map-popup">
@@ -45,6 +59,7 @@ function popupHTML(m) {
 
 export function initMap(manholes, opts = {}) {
   onViewDetails = opts.onViewDetails || onViewDetails;
+  onOpenDetails = opts.onOpenDetails || onOpenDetails;
 
   map = L.map("liveMap", {
     zoomControl: true,
@@ -58,14 +73,14 @@ export function initMap(manholes, opts = {}) {
 
   manholes.forEach((m) => addMarker(m));
 
-  // Delegate clicks on the "View Details" button inside popups.
   map.on("popupopen", (e) => {
-    const btn = e.popup.getElement()?.querySelector("[data-view-details]");
-    if (btn) {
-      btn.addEventListener("click", () =>
-        onViewDetails(btn.getAttribute("data-view-details")),
-      );
-    }
+    const button = e.popup.getElement()?.querySelector("[data-view-details]");
+    const manhole = markers.get(
+      button?.getAttribute("data-view-details"),
+    )?.manhole;
+    button?.addEventListener("click", () => {
+      if (manhole) onOpenDetails(manhole);
+    });
   });
 
   return map;
@@ -75,7 +90,8 @@ function addMarker(m) {
   const marker = L.marker([m.latitude, m.longitude], {
     icon: pinIcon(m.status, m.status === "CRITICAL"),
   }).bindPopup(popupHTML(m));
-  marker.on("click", () => onViewDetails(m.manholeId, { keepPage: true }));
+  marker.manhole = m;
+  marker.on("click", () => onOpenDetails(m));
   marker.addTo(map);
   markers.set(m.manholeId, marker);
 }
@@ -83,12 +99,20 @@ function addMarker(m) {
 export function updateMarker(m) {
   const marker = markers.get(m.manholeId);
   if (!marker) return;
-  marker.setIcon(pinIcon(m.status, m.status === "CRITICAL"));
+  marker.manhole = m;
+  marker.setIcon(
+    pinIcon(
+      m.status,
+      m.status === "CRITICAL" || m.manholeId === selectedManholeId,
+    ),
+  );
   marker.setPopupContent(popupHTML(m));
 }
 
 export function focusManhole(m, { openPopup = true } = {}) {
   if (!map) return;
+  selectedManholeId = m.manholeId;
+  refreshMarkerIcons();
   map.flyTo([m.latitude, m.longitude], 15, { duration: 0.6 });
   const marker = markers.get(m.manholeId);
   if (marker && openPopup) setTimeout(() => marker.openPopup(), 650);
@@ -96,16 +120,4 @@ export function focusManhole(m, { openPopup = true } = {}) {
 
 export function invalidateMapSize() {
   if (map) setTimeout(() => map.invalidateSize(), 50);
-}
-
-/**
- * Rebuilds the marker layer in place after a simulation reset
- * (new manhole fleet, same map/tile instance — no need to tear
- * down and recreate the Leaflet map itself).
- */
-export function resetMap(manholes) {
-  if (!map) return;
-  markers.forEach((marker) => map.removeLayer(marker));
-  markers.clear();
-  manholes.forEach((m) => addMarker(m));
 }

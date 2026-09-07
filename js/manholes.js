@@ -118,7 +118,7 @@ export function openManholeModal(manholeId) {
 
   body.querySelector("[data-modal-view-map]")?.addEventListener("click", () => {
     closeManholeModal();
-    onViewOnMap(m.manholeId);
+    onViewOnMap(m);
   });
 
   backdrop.classList.add("is-open");
