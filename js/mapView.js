@@ -91,7 +91,7 @@ function addMarker(m) {
     icon: pinIcon(m.status, m.status === "CRITICAL"),
   }).bindPopup(popupHTML(m));
   marker.manhole = m;
-  marker.on("click", () => onOpenDetails(m));
+  marker.on("click", () => onViewDetails(m.manholeId, { keepPage: true }));
   marker.addTo(map);
   markers.set(m.manholeId, marker);
 }
