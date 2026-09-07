@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartDrain — Subterranean Drainage Monitoring System</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- ============ SIDEBAR ============ -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand__mark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2C12 2 5 11 5 15.5C5 19.09 8.13 22 12 22C15.87 22 19 19.09 19 15.5C19 11 12 2 12 2Z"
+                fill="#fff"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="brand__title">Smart<span>Drain</span></div>
+            <div class="brand__subtitle">
+              Subterranean Drainage<br />Monitoring System
+            </div>
+          </div>
+        </div>
+
+        <ul class="nav">
+          <li>
+            <button class="nav__item nav__item--active" data-page="dashboard">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 12l9-9 9 9" />
+                <path d="M5 10v10h14V10" />
+              </svg>
+              <span>Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" data-page="map">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" />
+                <path d="M8 2v16M16 6v16" />
+              </svg>
+              <span>Live Map</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" data-page="alerts">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 2L1 21h22L12 2z" />
+                <path d="M12 9v5M12 17h.01" />
+              </svg>
+              <span>Alerts</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" data-page="manholes">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="3.4" />
+              </svg>
+              <span>Manholes</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" data-page="simulation">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 3l14 9-14 9V3z" />
+              </svg>
+              <span>Simulation</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav__item" data-page="settings">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.7 1.7 0 00.33 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.33 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.33-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.33-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.33H9a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.33 1.87V9a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z"
+                />
+              </svg>
+              <span>Settings</span>
+            </button>
+          </li>
+        </ul>
+
+        <div class="sidebar__footer">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6" />
+          </svg>
+          <div>Clean Drains<br />Safer Cities<br />Better Tomorrow</div>
+        </div>
+      </aside>
+
+      <!-- ============ MAIN ============ -->
+      <div class="main">
+        <!-- Topbar -->
+        <header class="topbar">
+          <div class="topbar__status">
+            <span class="status-pill"
+              ><span class="dot dot--anim" id="liveDot"></span>
+              <strong id="liveLabel" style="color: var(--text-900)"
+                >LIVE SYSTEM</strong
+              ></span
+            >
+            <span id="syncStatus">Last synchronized: just now</span>
+            <span
+              >Active Sensors:
+              <b id="activeSensors" style="font-family: var(--font-mono)"
+                >60/60</b
+              ></span
+            >
+            <span
+              >System Status:
+              <b style="color: var(--clear)">Operational</b></span
+            >
+          </div>
+          <div class="topbar__right">
+            <button
+              class="icon-btn"
+              aria-label="Notifications"
+              data-page-link="alerts"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 01-3.46 0" />
+              </svg>
+              <span class="badge-count" id="alertBadge">0</span>
+            </button>
+            <div class="profile">
+              <div class="profile__avatar">MT</div>
+              <div class="profile__name">Municipal Team</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="content">
+          <!-- ============ DASHBOARD PAGE ============ -->
+          <section class="page is-active" id="page-dashboard">
+            <div class="page-head">
+              <div>
+                <h1>Dashboard</h1>
+                <p>Real-time monitoring of the city drainage network</p>
+              </div>
+            </div>
+
+            <div class="stat-grid">
+              <div class="stat-card stat-card--total">
+                <div class="stat-card__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-card__label">Total Manholes</div>
+                  <div class="stat-card__value" id="statTotal">60</div>
+                </div>
+              </div>
+              <div class="stat-card stat-card--clear">
+                <div class="stat-card__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                  >
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-card__label">Clear</div>
+                  <div class="stat-card__value" id="statClear">
+                    42<small id="statClearPct">(70%)</small>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card stat-card--warning">
+                <div class="stat-card__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2L1 21h22L12 2z" />
+                    <path d="M12 9v5M12 17h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-card__label">Warning</div>
+                  <div class="stat-card__value" id="statWarning">
+                    12<small id="statWarningPct">(20%)</small>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card stat-card--critical">
+                <div class="stat-card__icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2L1 21h22L12 2z" />
+                    <path d="M12 9v5M12 17h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-card__label">Critical</div>
+                  <div class="stat-card__value" id="statCritical">
+                    6<small id="statCriticalPct">(10%)</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <div class="panel">
+                <div class="panel__head">
+                  <h2>Live Map</h2>
+                  <button
+                    class="link"
+                    data-page-link="map"
+                    style="background: none; border: none"
+                  >
+                    Open full map
+                  </button>
+                </div>
+                <div id="mapHostDashboard"><div id="liveMap"></div></div>
+              </div>
+
+              <div class="panel">
+                <div class="panel__head"><h2>Manhole Details</h2></div>
+                <div id="manholeDetailsPanel"></div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top: 16px">
+              <div class="panel__head">
+                <h2>Recent Alerts</h2>
+                <button
+                  class="link"
+                  data-page-link="alerts"
+                  style="background: none; border: none"
+                >
+                  View all
+                </button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Manhole ID</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Distance to Blockage</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentAlertsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ MAP PAGE ============ -->
+          <section class="page map-page" id="page-map">
+            <div class="page-head">
+              <div>
+                <h1>Live Map</h1>
+                <p>
+                  GIS-based monitoring of every drainage node in the network
+                </p>
+              </div>
+              <div class="page-head__meta">
+                <span class="badge badge--clear">● Clear</span>
+                <span class="badge badge--warning">● Warning</span>
+                <span class="badge badge--critical">● Critical</span>
+              </div>
+            </div>
+            <div class="panel">
+              <div id="mapHostFull"></div>
+            </div>
+          </section>
+
+          <!-- ============ ALERTS PAGE ============ -->
+          <section class="page" id="page-alerts">
+            <div class="page-head">
+              <div>
+                <h1>Alerts</h1>
+                <p>
+                  Active and historical blockage alerts generated by the sensor
+                  network
+                </p>
+              </div>
+              <div class="page-head__meta" id="alertsCount">0 alerts</div>
+            </div>
+
+            <div class="toolbar">
+              <input
+                class="search-input"
+                id="alertSearch"
+                placeholder="Search by manhole ID or zone…"
+              />
+              <div class="chip-row">
+                <button class="chip chip--active" data-alert-filter="all">
+                  All
+                </button>
+                <button class="chip" data-alert-filter="critical">
+                  Critical
+                </button>
+                <button class="chip" data-alert-filter="warning">
+                  Warning
+                </button>
+                <button class="chip" data-alert-filter="info">Recovered</button>
+              </div>
+            </div>
+
+            <div class="alerts-list" id="alertsList"></div>
+          </section>
+
+          <!-- ============ MANHOLES PAGE ============ -->
+          <section class="page" id="page-manholes">
+            <div class="page-head">
+              <div>
+                <h1>Manholes</h1>
+                <p>Search and inspect every monitored drainage node</p>
+              </div>
+              <div class="page-head__meta" id="manholeCount">
+                60 of 60 nodes
+              </div>
+            </div>
+
+            <div class="toolbar">
+              <input
+                class="search-input"
+                id="manholeSearch"
+                placeholder="Search manhole…"
+              />
+              <div class="chip-row">
+                <button class="chip chip--active" data-filter="ALL">All</button>
+                <button class="chip" data-filter="CLEAR">Clear</button>
+                <button class="chip" data-filter="WARNING">Warning</button>
+                <button class="chip" data-filter="CRITICAL">Critical</button>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Manhole ID</th>
+                      <th>Node ID</th>
+                      <th>Status</th>
+                      <th>Est. Blockage</th>
+                      <th>Distance</th>
+                      <th>Sensor ID</th>
+                      <th>Last Updated</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="manholesTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ SIMULATION PAGE ============ -->
+          <section class="page" id="page-simulation">
+            <div class="page-head">
+              <div>
+                <h1>Simulation</h1>
+                <p>
+                  Drive the mock sensor feed — this stands in for the ESP32 +
+                  ultrasonic sensor hardware
+                </p>
+              </div>
+            </div>
+
+            <div class="sim-grid">
+              <div>
+                <div class="panel sim-panel">
+                  <div class="sim-status-row">
+                    <span class="dot dot--anim" id="simStatusDot"></span>
+                    <strong
+                      >Simulation Status:
+                      <span id="simStatusLabel">PAUSED</span></strong
+                    >
+                  </div>
+                  <div class="sim-controls">
+                    <button class="btn btn--primary" id="simStart">
+                      ▶ Start Simulation
+                    </button>
+                    <button class="btn btn--ghost" id="simPause">
+                      ⏸ Pause Simulation
+                    </button>
+                    <button class="btn btn--ghost" id="simReset">
+                      ↺ Reset Simulation
+                    </button>
+                  </div>
+                  <div class="field">
+                    <label>Simulation Speed</label>
+                    <div class="chip-row">
+                      <button class="chip chip--active" data-speed="1">
+                        1x
+                      </button>
+                      <button class="chip" data-speed="2">2x</button>
+                      <button class="chip" data-speed="4">4x</button>
+                    </div>
+                  </div>
+                  <p class="flow-note" id="simAutoLabel">
+                    Simulation paused — no new readings incoming
+                  </p>
+                </div>
+
+                <div class="panel sim-panel">
+                  <div
+                    class="panel__head"
+                    style="border: none; padding-bottom: 0"
+                  >
+                    <h2>Manual Sensor Reading</h2>
+                  </div>
+                  <div style="padding: 14px 18px 18px">
+                    <div class="field">
+                      <label>Select Manhole</label>
+                      <select id="simManholeSelect"></select>
+                    </div>
+                    <div class="field">
+                      <label>Sensor Distance</label>
+                      <div class="range-row">
+                        <input
+                          type="range"
+                          id="simDistanceInput"
+                          min="2"
+                          max="120"
+                          value="90"
+                        />
+                        <output id="simDistanceValue">90 m</output>
+                      </div>
+                    </div>
+                    <button class="btn btn--primary btn--block" id="simApply">
+                      Apply Reading
+                    </button>
+                  </div>
+                </div>
+
+                <div class="panel sim-panel">
+                  <div
+                    class="panel__head"
+                    style="border: none; padding-bottom: 0"
+                  >
+                    <h2>Demo Lifecycle</h2>
+                  </div>
+                  <div style="padding: 8px 18px 18px">
+                    <p
+                      style="
+                        font-size: 12.8px;
+                        color: var(--text-600);
+                        margin-top: 0;
+                      "
+                    >
+                      Runs the full detect → alert → maintenance → recovery
+                      cycle on the selected manhole: 90m → 55m → 20m (clear →
+                      warning → critical), then maintenance brings it back 20m →
+                      45m → 70m → 90m (critical → warning → clear).
+                    </p>
+                    <button class="btn btn--primary btn--block" id="simDemoRun">
+                      Run Demo Lifecycle
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel sim-panel">
+                <div
+                  class="panel__head"
+                  style="border: none; padding-bottom: 0"
+                >
+                  <h2>Sensor Data Flow</h2>
+                </div>
+                <div class="flow-diagram">
+                  <div class="flow-step">Ultrasonic Sensor</div>
+                  <div class="flow-arrow">↓</div>
+                  <div class="flow-step">ESP32</div>
+                  <div class="flow-arrow">↓</div>
+                  <div class="flow-step">Distance Measurement</div>
+                  <div class="flow-arrow">↓</div>
+                  <div class="flow-step">Blockage Severity</div>
+                  <div class="flow-arrow">↓</div>
+                  <div class="flow-step">Municipal Dashboard</div>
+                </div>
+                <p
+                  class="flow-note"
+                  style="text-align: center; padding: 0 18px 18px"
+                >
+                  This panel is a visual reference only. The hardware and
+                  backend layers (ESP32, FastAPI, Firebase) are not implemented
+                  here — this frontend simulates their output so the UI can be
+                  demonstrated end-to-end.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ SETTINGS PAGE ============ -->
+          <section class="page" id="page-settings">
+            <div class="page-head">
+              <div>
+                <h1>Settings</h1>
+                <p>Prototype configuration reference</p>
+              </div>
+            </div>
+
+            <div class="settings-grid">
+              <div class="panel sim-panel">
+                <div
+                  class="panel__head"
+                  style="border: none; padding-bottom: 0"
+                >
+                  <h2>Status Thresholds</h2>
+                </div>
+                <div style="padding: 8px 18px 4px">
+                  <div class="settings-row">
+                    <span>Clear</span><b>0% – 29% estimated blockage</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Warning</span><b>30% – 59% estimated blockage</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Critical</span><b>60% – 100% estimated blockage</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Blockage formula</span
+                    ><b>(1 − distance / pipeLength) × 100</b>
+                  </div>
+                </div>
+              </div>
+              <div class="panel sim-panel">
+                <div
+                  class="panel__head"
+                  style="border: none; padding-bottom: 0"
+                >
+                  <h2>System Info</h2>
+                </div>
+                <div style="padding: 8px 18px 4px">
+                  <div class="settings-row">
+                    <span>Data source</span><b>Mock simulation layer</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Planned integration</span
+                    ><b>ESP32 → FastAPI → Firebase</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Map provider</span><b>Leaflet + OpenStreetMap</b>
+                  </div>
+                  <div class="settings-row">
+                    <span>Prototype area</span><b>Hyderabad, India</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MANHOLE DETAIL MODAL ============ -->
+    <div class="modal-backdrop" id="manholeModalBackdrop">
+      <div class="modal">
+        <button class="modal-close" id="manholeModalClose">✕</button>
+        <div id="manholeModalBody"></div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script>
+      // Simple top-level nav helpers for elements outside the sidebar
+      // (topbar bell, "open full map" / "view all" links).
+      document.addEventListener("click", (e) => {
+        const target = e.target.closest("[data-page-link]");
+        if (!target) return;
+        const pageId = target.getAttribute("data-page-link");
+        document.querySelector(`.nav__item[data-page="${pageId}"]`)?.click();
+      });
+    </script>
+  </body>
+</html>
