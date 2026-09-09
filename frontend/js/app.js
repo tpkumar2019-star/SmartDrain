@@ -131,9 +131,8 @@ window.addEventListener("dashboard:refresh", () => {
 });
 
 window.addEventListener("simulation:reset", () => {
-  // Full data reset: rebuild map markers is out of scope for a light
-  // reset, so we simply reload dependent views + re-init the map layer.
-  location.reload();
+  // Reset only the simulation state and remain on the current page.
+  // The Simulation panel handles its own UI reset without redirecting.
 });
 
 // Tick the "x seconds ago" labels once a second even when nothing changed.

@@ -9,6 +9,8 @@ import {
   getSensorData,
   startSimulation,
   pauseSimulation,
+  resumeSimulation,
+  stopSimulation,
   resetSimulation,
   setSpeed,
   updateSensorReading,
@@ -157,6 +159,26 @@ function syncDistanceInputToSelected() {
   updateSimulationScene(manhole);
 }
 
+function updateControlButtons() {
+  const startBtn = document.getElementById("simStart");
+  const pauseBtn = document.getElementById("simPause");
+
+  if (startBtn) {
+    startBtn.textContent =
+      state.running || state.paused
+        ? "■ Stop Simulation"
+        : "▶ Start Simulation";
+  }
+
+  if (pauseBtn) {
+    pauseBtn.textContent = state.running
+      ? "Ⅱ Pause Simulation"
+      : state.paused
+        ? "▶ Resume Simulation"
+        : "Ⅱ Pause Simulation";
+  }
+}
+
 export function renderSimulationStatus() {
   const dot = document.getElementById("simStatusDot");
   const label = document.getElementById("simStatusLabel");
@@ -167,8 +189,11 @@ export function renderSimulationStatus() {
   if (autoLabel) {
     autoLabel.textContent = state.running
       ? `Simulation running at ${state.speed}x — new readings arriving automatically`
-      : "Simulation paused — no new readings incoming";
+      : state.paused
+        ? "Simulation paused — no new readings incoming"
+        : "Simulation paused — no new readings incoming";
   }
+  updateControlButtons();
 }
 
 export function refreshSimulationPanel() {
@@ -181,12 +206,20 @@ export function initSimulationPage() {
   renderSimulationStatus();
 
   document.getElementById("simStart")?.addEventListener("click", () => {
-    startSimulation();
+    if (state.running || state.paused) {
+      stopSimulation();
+    } else {
+      startSimulation();
+    }
     renderSimulationStatus();
   });
 
   document.getElementById("simPause")?.addEventListener("click", () => {
-    pauseSimulation();
+    if (state.running) {
+      pauseSimulation();
+    } else if (state.paused) {
+      resumeSimulation();
+    }
     renderSimulationStatus();
   });
 
@@ -194,6 +227,12 @@ export function initSimulationPage() {
     resetSimulation();
     populateManholeSelect();
     renderSimulationStatus();
+    document.querySelectorAll("[data-speed]").forEach((chip) => {
+      chip.classList.toggle(
+        "chip--active",
+        Number(chip.getAttribute("data-speed")) === 1,
+      );
+    });
   });
 
   document.querySelectorAll("[data-speed]").forEach((chip) => {

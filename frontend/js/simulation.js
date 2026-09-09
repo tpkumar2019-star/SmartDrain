@@ -27,6 +27,7 @@ export const state = {
   manholes: generateManholes(60),
   alerts: [],
   running: false,
+  paused: false,
   speed: 1, // 1x, 2x, 4x
   intervalId: null,
   demoRunning: false,
@@ -167,10 +168,11 @@ function computeIntervalMs() {
 }
 
 export function startSimulation() {
-  if (state.running) return;
+  if (state.running || state.paused) return;
   state.running = true;
+  state.paused = false;
   state.intervalId = setInterval(randomWalkTick, computeIntervalMs());
-  emit("simulation:statechange", { running: true });
+  emit("simulation:statechange", { running: true, paused: false });
 }
 
 export function pauseSimulation() {
@@ -178,11 +180,30 @@ export function pauseSimulation() {
   clearInterval(state.intervalId);
   state.intervalId = null;
   state.running = false;
-  emit("simulation:statechange", { running: false });
+  state.paused = true;
+  emit("simulation:statechange", { running: false, paused: true });
+}
+
+export function resumeSimulation() {
+  if (!state.paused) return;
+  state.running = true;
+  state.paused = false;
+  state.intervalId = setInterval(randomWalkTick, computeIntervalMs());
+  emit("simulation:statechange", { running: true, paused: false });
+}
+
+export function stopSimulation() {
+  if (!state.running && !state.paused) return;
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+  state.paused = false;
+  emit("simulation:statechange", { running: false, paused: false });
 }
 
 export function resetSimulation() {
-  pauseSimulation();
+  stopSimulation();
+  state.speed = 1;
   state.manholes = generateManholes(60);
   state.alerts = [];
   state.demoRunning = false;
@@ -197,7 +218,10 @@ export function setSpeed(multiplier) {
     clearInterval(state.intervalId);
     state.intervalId = setInterval(randomWalkTick, computeIntervalMs());
   }
-  emit("simulation:statechange", { running: state.running });
+  emit("simulation:statechange", {
+    running: state.running,
+    paused: state.paused,
+  });
 }
 
 // ---------------- Demo mode: scripted lifecycle for one manhole ----------------
