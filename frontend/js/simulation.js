@@ -13,6 +13,11 @@ import {
   calculateBlockage,
   calculateStatus,
 } from "./data.js";
+import {
+  fetchAllManholes,
+  fetchAlerts,
+  submitSensorReading,
+} from "./backendAdapter.js";
 
 const HISTORY_LIMIT = 24;
 const ALERT_LIMIT = 300;
@@ -39,6 +44,23 @@ export function getSensorData() {
 
 export function getManhole(manholeId) {
   return state.manholes.find((m) => m.manholeId === manholeId);
+}
+
+export async function loadInitialDataFromBackend() {
+  try {
+    const [manholes, alerts] = await Promise.all([
+      fetchAllManholes(),
+      fetchAlerts(),
+    ]);
+
+    if (manholes.length) {
+      state.manholes = manholes;
+      state.alerts = alerts;
+      state.lastSyncedAt = Date.now();
+    }
+  } catch (error) {
+    console.warn("Backend unavailable; using local simulation data.", error);
+  }
 }
 
 function pushAlert(manhole, prevStatus, newStatus) {
@@ -110,6 +132,11 @@ export function updateSensorReading(manholeId, newDistance) {
   if (manhole.status !== prevStatus) {
     pushAlert(manhole, prevStatus, manhole.status);
   }
+
+  submitSensorReading(manhole.nodeId, manhole.sensorId, clamped).catch(() => {
+    // Backend sync is optional during local UI simulation. The UI still updates
+    // instantly even if the API is temporarily unavailable.
+  });
 
   emit("manhole:update", { manhole, prevStatus });
   return manhole;

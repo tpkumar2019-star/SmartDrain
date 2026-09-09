@@ -3,7 +3,7 @@
 // and subscribes UI render functions to simulation events.
 // ============================================================
 
-import { state } from "./simulation.js";
+import { state, loadInitialDataFromBackend } from "./simulation.js";
 import {
   initMap,
   updateMarker,
@@ -91,7 +91,9 @@ setManholeMapHandler(navigateToManhole);
 
 // ---------------- Boot ----------------
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadInitialDataFromBackend();
+
   initMap(state.manholes, {
     onViewDetails: navigateToManhole,
     onOpenDetails: openManholeDetailsModal,

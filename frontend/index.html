@@ -420,26 +420,74 @@
 
           <!-- ============ SIMULATION PAGE ============ -->
           <section class="page" id="page-simulation">
-            <div class="page-head">
-              <div>
-                <h1>Simulation</h1>
-                <p>
-                  Drive the mock sensor feed — this stands in for the ESP32 +
-                  ultrasonic sensor hardware
-                </p>
+            <div class="page-head sim-page-head">
+              <div class="sim-header-copy">
+                <div class="sim-brand-inline">
+                  <span class="sim-brand-mark">(())</span>
+                  <div>
+                    <h1>Sensor Simulation</h1>
+                    <p>
+                      Real-time simulation of ultrasonic sensor working inside a
+                      drainage pipe
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="sim-running-pill">
+                <span class="dot dot--anim" id="simStatusDot"></span>
+                <span id="simStatusLabel">PAUSED</span>
               </div>
             </div>
 
             <div class="sim-grid">
-              <div>
-                <div class="panel sim-panel">
-                  <div class="sim-status-row">
-                    <span class="dot dot--anim" id="simStatusDot"></span>
-                    <strong
-                      >Simulation Status:
-                      <span id="simStatusLabel">PAUSED</span></strong
+              <div class="panel sim-scene-panel">
+                <div class="sim-scene-top">
+                  <label class="sim-select-wrap" for="simManholeSelect">
+                    <span class="sim-select-icon">◉</span>
+                    <select id="simManholeSelect"></select>
+                  </label>
+                </div>
+
+                <div class="sim-pipe-scene" id="simPipeScene">
+                  <div class="sim-housing"></div>
+                  <div class="sim-sensor">
+                    <span class="sim-sensor-label">Ultrasonic Sensor</span>
+                    <small>(ESP32)</small>
+                  </div>
+
+                  <div class="sim-wave sim-wave--outgoing"></div>
+                  <div class="sim-wave sim-wave--returning"></div>
+
+                  <div class="sim-pipe">
+                    <div class="sim-pipe-water"></div>
+                    <div class="sim-obstruction"></div>
+                    <div class="sim-water-label">Water Level</div>
+                    <div class="sim-obstruction-label">
+                      Debris / Obstruction
+                    </div>
+                  </div>
+
+                  <div class="sim-legend">
+                    <span class="legend-item"
+                      ><i class="legend-swatch legend-swatch--send"></i>
+                      Ultrasonic wave (going)</span
+                    >
+                    <span class="legend-item"
+                      ><i class="legend-swatch legend-swatch--echo"></i> Echo
+                      (returning)</span
+                    >
+                    <span class="legend-item"
+                      ><i class="legend-swatch legend-swatch--water"></i> Water
+                      level</span
+                    >
+                    <span class="legend-item"
+                      ><i class="legend-swatch legend-swatch--debris"></i>
+                      Debris / Obstruction</span
                     >
                   </div>
+                </div>
+
+                <div class="sim-controls-wrap">
                   <div class="sim-controls">
                     <button class="btn btn--primary" id="simStart">
                       ▶ Start Simulation
@@ -451,7 +499,7 @@
                       ↺ Reset Simulation
                     </button>
                   </div>
-                  <div class="field">
+                  <div class="field field--inline">
                     <label>Simulation Speed</label>
                     <div class="chip-row">
                       <button class="chip chip--active" data-speed="1">
@@ -461,97 +509,103 @@
                       <button class="chip" data-speed="4">4x</button>
                     </div>
                   </div>
-                  <p class="flow-note" id="simAutoLabel">
-                    Simulation paused — no new readings incoming
-                  </p>
-                </div>
-
-                <div class="panel sim-panel">
-                  <div
-                    class="panel__head"
-                    style="border: none; padding-bottom: 0"
-                  >
-                    <h2>Manual Sensor Reading</h2>
+                  <div class="field field--inline">
+                    <label>Sensor Distance</label>
+                    <div class="range-row">
+                      <input
+                        type="range"
+                        id="simDistanceInput"
+                        min="2"
+                        max="120"
+                        value="90"
+                      />
+                      <output id="simDistanceValue">90 m</output>
+                    </div>
                   </div>
-                  <div style="padding: 14px 18px 18px">
-                    <div class="field">
-                      <label>Select Manhole</label>
-                      <select id="simManholeSelect"></select>
-                    </div>
-                    <div class="field">
-                      <label>Sensor Distance</label>
-                      <div class="range-row">
-                        <input
-                          type="range"
-                          id="simDistanceInput"
-                          min="2"
-                          max="120"
-                          value="90"
-                        />
-                        <output id="simDistanceValue">90 m</output>
-                      </div>
-                    </div>
+                  <div class="sim-action-row">
                     <button class="btn btn--primary btn--block" id="simApply">
                       Apply Reading
                     </button>
-                  </div>
-                </div>
-
-                <div class="panel sim-panel">
-                  <div
-                    class="panel__head"
-                    style="border: none; padding-bottom: 0"
-                  >
-                    <h2>Demo Lifecycle</h2>
-                  </div>
-                  <div style="padding: 8px 18px 18px">
-                    <p
-                      style="
-                        font-size: 12.8px;
-                        color: var(--text-600);
-                        margin-top: 0;
-                      "
-                    >
-                      Runs the full detect → alert → maintenance → recovery
-                      cycle on the selected manhole: 90m → 55m → 20m (clear →
-                      warning → critical), then maintenance brings it back 20m →
-                      45m → 70m → 90m (critical → warning → clear).
-                    </p>
                     <button class="btn btn--primary btn--block" id="simDemoRun">
                       Run Demo Lifecycle
                     </button>
                   </div>
+                  <p class="flow-note" id="simAutoLabel">
+                    Simulation paused — no new readings incoming
+                  </p>
                 </div>
               </div>
 
-              <div class="panel sim-panel">
-                <div
-                  class="panel__head"
-                  style="border: none; padding-bottom: 0"
-                >
-                  <h2>Sensor Data Flow</h2>
+              <aside class="panel sim-metrics-panel">
+                <div class="sim-metrics-header">
+                  <h2>Live Sensor Data</h2>
+                  <span class="status-pill status-pill--online">
+                    <span class="dot dot--anim"></span>
+                    Connected
+                  </span>
                 </div>
-                <div class="flow-diagram">
-                  <div class="flow-step">Ultrasonic Sensor</div>
-                  <div class="flow-arrow">↓</div>
-                  <div class="flow-step">ESP32</div>
-                  <div class="flow-arrow">↓</div>
-                  <div class="flow-step">Distance Measurement</div>
-                  <div class="flow-arrow">↓</div>
-                  <div class="flow-step">Blockage Severity</div>
-                  <div class="flow-arrow">↓</div>
-                  <div class="flow-step">Municipal Dashboard</div>
+
+                <div class="sim-metric-list">
+                  <div class="sim-metric-row">
+                    <span>Node ID</span>
+                    <strong id="simNodeId">NODE_01D</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Sensor ID</span>
+                    <strong id="simSensorId">US-01D</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Location</span>
+                    <strong id="simLocation">17.4078°N, 78.4665°E</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Pipe Length</span>
+                    <strong id="simPipeLength">100 m</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Obstruction Distance</span>
+                    <strong id="simObstructionDistance">32 m</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Estimated Blockage</span>
+                    <strong id="simBlockageValue">68%</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Water Level</span>
+                    <strong id="simWaterLevel">45%</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Blockage Severity</span>
+                    <strong
+                      id="simSeverity"
+                      class="status-chip status-chip--critical"
+                      >High</strong
+                    >
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Status</span>
+                    <strong
+                      id="simStatusText"
+                      class="status-chip status-chip--critical"
+                      >Critical</strong
+                    >
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Last Updated</span>
+                    <strong id="simLastUpdated">7 Sept 2026, 02:18 PM</strong>
+                  </div>
                 </div>
-                <p
-                  class="flow-note"
-                  style="text-align: center; padding: 0 18px 18px"
-                >
-                  This panel is a visual reference only. The hardware and
-                  backend layers (ESP32, FastAPI, Firebase) are not implemented
-                  here — this frontend simulates their output so the UI can be
-                  demonstrated end-to-end.
-                </p>
-              </div>
+
+                <div class="sim-calc-box">
+                  <div class="sim-calc-label">Calculation Logic</div>
+                  <div class="sim-calc-copy">
+                    Distance = (Echo Time × Speed of Sound) / 2
+                  </div>
+                  <div class="sim-calc-value" id="simCurrentCalculation">
+                    2.13 ms × 1480 m/s ÷ 2 = 32 m
+                  </div>
+                </div>
+              </aside>
             </div>
           </section>
 
