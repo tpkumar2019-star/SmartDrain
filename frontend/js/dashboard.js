@@ -88,7 +88,7 @@ export function renderDetailsPanel() {
     </div>
     <dl class="details-list">
       <div><dt>Status</dt><dd class="text-${m.status.toLowerCase()}">${m.status[0]}${m.status.slice(1).toLowerCase()}</dd></div>
-      <div><dt>Estimated obstruction</dt><dd>${m.expectedPipeLength - m.measuredDistance} meters</dd></div>
+      <div><dt>Obstruction distance</dt><dd>${m.measuredDistance} meters</dd></div>
       <div><dt>Estimated blockage</dt><dd>~${m.blockagePercentage}%</dd></div>
       <div><dt>Last reading</dt><dd>${formatDateTime(m.lastUpdated)}</dd></div>
       <div><dt>Sensor ID</dt><dd>${m.sensorId}</dd></div>

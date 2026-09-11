@@ -94,24 +94,38 @@ export function openManholeModal(manholeId) {
   const body = document.getElementById("manholeModalBody");
   if (!backdrop || !body) return;
 
+  const zone = m.zone ?? m.area ?? "Unknown Zone";
+  const location = `${Number(m.latitude ?? 0).toFixed(4)}°N, ${Number(m.longitude ?? 0).toFixed(4)}°E`;
+  const expectedPipeLength = Number(m.expectedPipeLength ?? m.pipeLength ?? 0);
+  const measuredDistance = Number(m.measuredDistance ?? 0);
+  const waterLevel = Number(m.waterLevelPercentage ?? m.waterLevel ?? 0);
+  const riskScore = Number(m.riskScore ?? 0);
+  const blockageSeverity = String(
+    m.blockageSeverity ??
+      (riskScore >= 61 ? "High" : riskScore >= 31 ? "Moderate" : "Low"),
+  );
+  const status = String(m.status ?? "CLEAR").toUpperCase();
+  const riskScoreDisplay = Number.isInteger(riskScore)
+    ? String(riskScore)
+    : Number(riskScore).toFixed(1);
+
   body.innerHTML = `
     <div class="modal-head">
       <h3>${m.manholeId.replace("MANHOLE_", "Manhole ")}</h3>
-      ${statusBadge(m.status)}
+      ${statusBadge(status)}
     </div>
     <div class="modal-grid">
       <div><span>Node ID</span><b>${m.nodeId}</b></div>
       <div><span>Sensor ID</span><b>${m.sensorId}</b></div>
-      <div><span>Zone</span><b>${m.area}</b></div>
-      <div><span>Location</span><b>${m.latitude.toFixed(4)}°N, ${m.longitude.toFixed(4)}°E</b></div>
-      <div><span>Expected pipe length</span><b>${m.expectedPipeLength} m</b></div>
-      <div><span>Measured distance</span><b>${m.measuredDistance} m</b></div>
-      <div><span>Estimated blockage</span><b>${m.blockagePercentage}%</b></div>
-      <div><span>Last updated</span><b>${formatDateTime(m.lastUpdated)}</b></div>
-    </div>
-    <div class="modal-chart">
-      <div class="modal-chart__label">Measured Distance — Recent History</div>
-      ${sparklineSVG(m.history, { width: 460, height: 70, key: "distance", stroke: "#2f6fed" })}
+      <div><span>Zone</span><b>${zone}</b></div>
+      <div><span>Location</span><b>${location}</b></div>
+      <div><span>Expected Pipe Length</span><b>${expectedPipeLength} m</b></div>
+      <div><span>Measured Distance</span><b>${measuredDistance} m</b></div>
+      <div><span>Water Level Percentage</span><b>${Math.round(waterLevel)}%</b></div>
+      <div><span>Risk Score</span><b>${riskScoreDisplay}</b></div>
+      <div><span>Blockage Severity</span><b>${blockageSeverity}</b></div>
+      <div><span>Status</span><b>${status}</b></div>
+      <div><span>Last Updated</span><b>${formatDateTime(m.lastUpdated)}</b></div>
     </div>
     <button class="btn btn--primary btn--block" data-modal-view-map="${m.manholeId}">View on Map</button>
   `;

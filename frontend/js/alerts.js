@@ -32,7 +32,7 @@ function activeAlerts() {
       nodeId: m.nodeId,
       area: m.area,
       blockagePercentage: m.blockagePercentage,
-      distanceMeters: m.expectedPipeLength - m.measuredDistance,
+      distanceMeters: m.measuredDistance,
       message:
         m.status === "CRITICAL"
           ? `Estimated blockage is ${m.blockagePercentage}%. Immediate inspection recommended.`

@@ -567,12 +567,16 @@
                     <strong id="simObstructionDistance">32 m</strong>
                   </div>
                   <div class="sim-metric-row">
-                    <span>Estimated Blockage</span>
-                    <strong id="simBlockageValue">68%</strong>
+                    <span>Obstruction Score</span>
+                    <strong id="simObstructionScore">68%</strong>
                   </div>
                   <div class="sim-metric-row">
-                    <span>Water Level</span>
+                    <span>Water Level Percentage</span>
                     <strong id="simWaterLevel">45%</strong>
+                  </div>
+                  <div class="sim-metric-row">
+                    <span>Risk Score</span>
+                    <strong id="simRiskScore">80%</strong>
                   </div>
                   <div class="sim-metric-row">
                     <span>Blockage Severity</span>
@@ -599,10 +603,10 @@
                 <div class="sim-calc-box">
                   <div class="sim-calc-label">Calculation Logic</div>
                   <div class="sim-calc-copy">
-                    Distance = (Echo Time × Speed of Sound) / 2
+                    Risk Score = (Obstruction Score × 0.4) + (Water Level × 0.6)
                   </div>
                   <div class="sim-calc-value" id="simCurrentCalculation">
-                    2.13 ms × 1480 m/s ÷ 2 = 32 m
+                    (68 × 0.4) + (45 × 0.6) = 56%
                   </div>
                 </div>
               </aside>
@@ -717,38 +721,6 @@
                 </div>
                 <div class="dm-severity__msg" id="dmSeverityMsg">Message</div>
               </div>
-            </div>
-
-            <div class="dm-block">
-              <div class="dm-block__label">Distance vs Blockage</div>
-              <div class="dm-progress">
-                <div
-                  class="dm-progress__fill"
-                  id="dmProgressFill"
-                  style="width: 0%"
-                ></div>
-              </div>
-              <div class="dm-progress__stats">
-                <div>
-                  <div class="dm-progress__stat-label">
-                    Obstruction distance
-                  </div>
-                  <div class="dm-progress__stat-value" id="dmObstructionValue">
-                    0 m
-                  </div>
-                </div>
-                <div class="dm-progress__stat--right">
-                  <div class="dm-progress__stat-label">Estimated blockage</div>
-                  <div class="dm-progress__stat-value" id="dmBlockageValue">
-                    0%
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="dm-block">
-              <div class="dm-block__label">Recent Readings</div>
-              <div class="dm-chart" id="dmChartHost"></div>
             </div>
           </div>
         </div>

@@ -12,6 +12,10 @@ import {
   generateManholes,
   calculateBlockage,
   calculateStatus,
+  calculateWaterLevel,
+  calculateObstructionScore,
+  calculateRiskScore,
+  calculateSeverityLabel,
 } from "./data.js";
 import {
   fetchAllManholes,
@@ -114,19 +118,44 @@ export function updateSensorReading(manholeId, newDistance) {
     Math.min(manhole.expectedPipeLength, Math.round(newDistance)),
   );
   const prevStatus = manhole.status;
-
-  manhole.measuredDistance = clamped;
-  manhole.blockagePercentage = calculateBlockage(
+  const targetObstructionScore = calculateObstructionScore(
     manhole.expectedPipeLength,
     clamped,
   );
-  manhole.status = calculateStatus(manhole.blockagePercentage);
+  const targetWater = calculateWaterLevel(
+    manhole.expectedPipeLength,
+    clamped,
+    Number(manhole.waterLevelPercentage ?? 0),
+  );
+
+  manhole.measuredDistance = clamped;
+  manhole.obstructionDistance = clamped;
+  manhole.obstructionScore = targetObstructionScore;
+  manhole.blockagePercentage = targetObstructionScore;
+  manhole.waterLevel = Math.max(0, Math.min(100, targetWater));
+  manhole.waterLevelPercentage = manhole.waterLevel;
+  manhole.riskScore = calculateRiskScore(
+    manhole.obstructionScore,
+    manhole.waterLevelPercentage,
+  );
+  manhole.blockageSeverity = calculateSeverityLabel(manhole.riskScore);
+  manhole.status = calculateStatus(manhole.riskScore);
   manhole.lastUpdated = Date.now();
 
   manhole.history.push({
     t: manhole.lastUpdated,
+    nodeId: manhole.nodeId,
+    sensorId: manhole.sensorId,
     distance: manhole.measuredDistance,
+    obstructionDistance: manhole.measuredDistance,
+    obstructionScore: manhole.obstructionScore,
     blockage: manhole.blockagePercentage,
+    blockagePercentage: manhole.blockagePercentage,
+    waterLevel: manhole.waterLevelPercentage,
+    waterLevelPercentage: manhole.waterLevelPercentage,
+    riskScore: manhole.riskScore,
+    blockageSeverity: manhole.blockageSeverity,
+    status: manhole.status,
   });
   if (manhole.history.length > HISTORY_LIMIT) manhole.history.shift();
 

@@ -19,9 +19,13 @@ class ManholeBase(BaseModel):
     latitude: float
     longitude: float
     pipeLength: int
+    obstructionDistance: float
     distance: float
+    obstructionScore: float
     estimatedBlockage: float
     waterLevel: float
+    waterLevelPercentage: float
+    riskScore: float
     blockageSeverity: str
     status: str
     lastUpdated: Optional[str] = None

@@ -11,7 +11,7 @@
 // ============================================================
 
 import { state } from "./simulation.js";
-import { timeAgo, formatDateTime } from "./utils.js";
+import { formatDateTime } from "./utils.js";
 
 let currentManholeId = null;
 let onViewOnMap = () => {};
@@ -48,146 +48,70 @@ function row(iconKey, label, value) {
     </div>`;
 }
 
-/** Small line chart built with plain SVG — no chart library. */
-function historyChartSVG(manhole) {
-  const points = manhole.history;
-  const W = 320,
-    H = 140,
-    padL = 30,
-    padR = 12,
-    padT = 10,
-    padB = 24;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-
-  if (points.length < 2) {
-    return `<div class="dm-chart__empty">Collecting sensor history…</div>`;
-  }
-
-  const yMax = Math.max(50, Math.ceil(manhole.expectedPipeLength / 50) * 50);
-  const stepX = innerW / (points.length - 1);
-  const color =
-    manhole.status === "CRITICAL"
-      ? "#e0362f"
-      : manhole.status === "WARNING"
-        ? "#e0a015"
-        : "#1e9e5a";
-
-  const coords = points.map((p, i) => {
-    const x = padL + i * stepX;
-    const y = padT + innerH - (Math.min(p.distance, yMax) / yMax) * innerH;
-    return { x, y };
-  });
-  const path = coords
-    .map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`)
-    .join(" ");
-
-  // Show at most 5 evenly spaced x-axis time labels.
-  const labelCount = Math.min(5, points.length);
-  const labelStep = Math.max(
-    1,
-    Math.floor((points.length - 1) / (labelCount - 1 || 1)),
-  );
-  const xLabels = [];
-  for (let i = 0; i < points.length; i += labelStep) {
-    xLabels.push({
-      x: coords[i].x,
-      text: new Date(points[i].t).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-  }
-  if (xLabels[xLabels.length - 1]?.x !== coords[coords.length - 1].x) {
-    xLabels.push({
-      x: coords[coords.length - 1].x,
-      text: new Date(points[points.length - 1].t).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-  }
-
-  const gridLines = [0, 0.5, 1]
-    .map((frac) => {
-      const y = padT + innerH * frac;
-      const label = Math.round(yMax * (1 - frac));
-      return `
-      <line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#eef1f6" stroke-width="1" />
-      <text x="${padL - 6}" y="${y + 3}" font-size="9" fill="#8a94a6" text-anchor="end">${label}</text>`;
-    })
-    .join("");
-
-  const dots = coords
-    .map((c) => `<circle cx="${c.x}" cy="${c.y}" r="2.6" fill="${color}" />`)
-    .join("");
-  const xAxisLabels = xLabels
-    .map(
-      (l) =>
-        `<text x="${l.x}" y="${H - 6}" font-size="9" fill="#8a94a6" text-anchor="middle">${l.text}</text>`,
-    )
-    .join("");
-
-  return `
-    <svg viewBox="0 0 ${W} ${H}" class="dm-chart-svg" preserveAspectRatio="none">
-      ${gridLines}
-      <polyline points="${path}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" />
-      ${dots}
-      ${xAxisLabels}
-    </svg>`;
-}
-
 function renderContent(manhole) {
-  const s = manhole.status;
-  const sLower = s.toLowerCase();
-  const obstruction = manhole.expectedPipeLength - manhole.measuredDistance;
+  const status = String(manhole.status ?? "CLEAR").toUpperCase();
+  const severity = String(
+    manhole.blockageSeverity ??
+      (Number(manhole.riskScore ?? 0) >= 61
+        ? "High"
+        : Number(manhole.riskScore ?? 0) >= 31
+          ? "Moderate"
+          : "Low"),
+  );
+  const sLower = status.toLowerCase();
+  const zone = manhole.zone ?? manhole.area ?? "Unknown Zone";
+  const expectedPipeLength = Number(
+    manhole.expectedPipeLength ?? manhole.pipeLength ?? 0,
+  );
+  const measuredDistance = Number(manhole.measuredDistance ?? 0);
+  const waterLevelPercentage = Number(
+    manhole.waterLevelPercentage ?? manhole.waterLevel ?? 0,
+  );
+  const riskScore = Number(manhole.riskScore ?? 0);
+  const locationText = `${Number(manhole.latitude ?? 0).toFixed(4)}°N, ${Number(manhole.longitude ?? 0).toFixed(4)}°E`;
 
   document.getElementById("dmTitle").textContent = manhole.manholeId.replace(
     "MANHOLE_",
     "Manhole ",
   );
-  document.getElementById("dmSubtitle").textContent =
-    `${manhole.area}, Hyderabad`;
+  document.getElementById("dmSubtitle").textContent = `${zone}, Hyderabad`;
 
   const badge = document.getElementById("dmStatusBadge");
-  badge.textContent = s[0] + s.slice(1).toLowerCase();
+  badge.textContent = status[0] + status.slice(1).toLowerCase();
   badge.className = `badge badge--${sLower}`;
 
   document.getElementById("dmLeftCol").innerHTML = [
     row("hash", "Node ID", manhole.nodeId),
     row("chip", "Sensor ID", manhole.sensorId),
+    row("pin", "Zone", zone),
+    row("pin", "Location", locationText),
+    row("pipe", "Expected Pipe Length", `${expectedPipeLength} m`),
+    row("ruler", "Measured Distance", `${measuredDistance} m`),
     row(
-      "pin",
-      "Location",
-      `${manhole.latitude.toFixed(4)}°N, ${manhole.longitude.toFixed(4)}°E`,
+      "percent",
+      "Water Level Percentage",
+      `${Math.round(waterLevelPercentage)}%`,
     ),
-    row("clock", "Last updated", formatDateTime(manhole.lastUpdated)),
+    row(
+      "percent",
+      "Risk Score",
+      `${Number.isInteger(riskScore) ? riskScore : riskScore.toFixed(1)}`,
+    ),
+    row("pulse", "Blockage Severity", severity),
     row(
       "pulse",
       "Status",
-      `<span class="text-${sLower}">${s[0]}${s.slice(1).toLowerCase()}</span>`,
+      `<span class="text-${sLower}">${status[0]}${status.slice(1).toLowerCase()}</span>`,
     ),
-    row("ruler", "Obstruction distance", `${obstruction} meters`),
-    row("percent", "Estimated blockage", `~${manhole.blockagePercentage}%`),
-    row("pipe", "Expected pipe length", `${manhole.expectedPipeLength} meters`),
+    row("clock", "Last Updated", formatDateTime(manhole.lastUpdated)),
   ].join("");
 
   document.getElementById("dmSeverityBox").className =
     `dm-severity dm-severity--${sLower}`;
-  document.getElementById("dmSeverityIcon").innerHTML = statusIconSVG(s);
-  document.getElementById("dmSeverityTitle").textContent = s;
-  document.getElementById("dmSeverityMsg").textContent = STATUS_COPY[s];
-
-  const fill = document.getElementById("dmProgressFill");
-  fill.style.width = `${manhole.blockagePercentage}%`;
-  fill.className = `dm-progress__fill dm-progress__fill--${sLower}`;
-
-  document.getElementById("dmObstructionValue").textContent =
-    `${obstruction} m`;
-  document.getElementById("dmBlockageValue").textContent =
-    `${manhole.blockagePercentage}%`;
-
-  document.getElementById("dmChartHost").innerHTML = historyChartSVG(manhole);
+  document.getElementById("dmSeverityIcon").innerHTML = statusIconSVG(status);
+  document.getElementById("dmSeverityTitle").textContent = status;
+  document.getElementById("dmSeverityMsg").textContent =
+    STATUS_COPY[status] || STATUS_COPY.CLEAR;
 }
 
 export function initManholeDetailsModal(handlers = {}) {

@@ -38,6 +38,19 @@ def _generate_seed_manholes() -> List[Dict[str, Any]]:
             status = "CLEAR"
             blockage = 30
 
+        obstruction_score = blockage
+        water_level = round(blockage * 0.66, 1)
+        risk_score = (obstruction_score * 0.4) + (water_level * 0.6)
+        if risk_score >= 61:
+            severity = "High"
+            status = "CRITICAL"
+        elif risk_score >= 31:
+            severity = "Moderate"
+            status = "WARNING"
+        else:
+            severity = "Low"
+            status = "CLEAR"
+
         manholes.append(
             {
                 "manholeId": f"{index:02d}D",
@@ -47,10 +60,14 @@ def _generate_seed_manholes() -> List[Dict[str, Any]]:
                 "latitude": round(lat + ((index % 10) * 0.002), 4),
                 "longitude": round(lon + ((index % 7) * 0.003), 4),
                 "pipeLength": pipe_length,
+                "obstructionDistance": distance,
                 "distance": distance,
+                "obstructionScore": obstruction_score,
                 "estimatedBlockage": blockage,
-                "waterLevel": round(blockage * 0.66, 1),
-                "blockageSeverity": "High" if status == "CRITICAL" else "Medium" if status == "WARNING" else "Low",
+                "waterLevel": water_level,
+                "waterLevelPercentage": water_level,
+                "riskScore": round(risk_score, 2),
+                "blockageSeverity": severity,
                 "status": status,
                 "lastUpdated": datetime.now(timezone.utc).isoformat(),
             }
@@ -67,6 +84,10 @@ def _seed_if_empty() -> None:
 
 
 def _normalize_manhole_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    obstruction_distance = data.get("obstructionDistance", data.get("distance", 0))
+    obstruction_score = data.get("obstructionScore", data.get("estimatedBlockage", 0))
+    water_level = data.get("waterLevelPercentage", data.get("waterLevel", 0))
+    risk_score = data.get("riskScore", (obstruction_score * 0.4) + (water_level * 0.6))
     return {
         "manholeId": data.get("manholeId"),
         "nodeId": data.get("nodeId"),
@@ -75,9 +96,13 @@ def _normalize_manhole_data(data: Dict[str, Any]) -> Dict[str, Any]:
         "latitude": data.get("latitude"),
         "longitude": data.get("longitude"),
         "pipeLength": data.get("pipeLength", 100),
-        "distance": data.get("distance", 0),
-        "estimatedBlockage": data.get("estimatedBlockage", 0),
-        "waterLevel": data.get("waterLevel", 0),
+        "obstructionDistance": obstruction_distance,
+        "distance": obstruction_distance,
+        "obstructionScore": obstruction_score,
+        "estimatedBlockage": obstruction_score,
+        "waterLevel": water_level,
+        "waterLevelPercentage": water_level,
+        "riskScore": risk_score,
         "blockageSeverity": data.get("blockageSeverity", "Low"),
         "status": data.get("status", "CLEAR"),
         "lastUpdated": data.get("lastUpdated"),
@@ -136,7 +161,8 @@ def record_history(manhole_id: str, payload: Dict[str, Any]) -> None:
                 "timestamp": payload["lastUpdated"],
                 "distance": payload["distance"],
                 "blockage": payload["estimatedBlockage"],
-                "waterLevel": payload["waterLevel"],
+                "waterLevel": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
+                "waterLevelPercentage": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
                 "status": payload["status"],
             }
         )
@@ -152,7 +178,8 @@ def record_history(manhole_id: str, payload: Dict[str, Any]) -> None:
                     "timestamp": payload["lastUpdated"],
                     "distance": payload["distance"],
                     "blockage": payload["estimatedBlockage"],
-                    "waterLevel": payload["waterLevel"],
+                    "waterLevel": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
+                    "waterLevelPercentage": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
                     "status": payload["status"],
                 }
             )

@@ -16,6 +16,14 @@ import {
   updateSensorReading,
   runDemoSequence,
 } from "./simulation.js";
+import {
+  calculateBlockage,
+  calculateStatus,
+  calculateWaterLevel,
+  calculateObstructionScore,
+  calculateRiskScore,
+  calculateSeverityLabel,
+} from "./data.js";
 
 let selectedManholeId = null;
 
@@ -31,20 +39,31 @@ function updateSimulationScene(manhole) {
         (manhole.measuredDistance / manhole.expectedPipeLength) * 100,
       ),
     );
+    const waterHeight = Math.max(
+      12,
+      Math.min(100, Number(manhole.waterLevelPercentage ?? 0)),
+    );
     const obstructionRatio = Math.max(
       12,
       Math.min(
         88,
-        ((manhole.expectedPipeLength - manhole.measuredDistance) /
-          manhole.expectedPipeLength) *
+        (Math.max(0, manhole.measuredDistance) /
+          Math.max(1, manhole.expectedPipeLength)) *
           100,
       ),
     );
     scene.style.setProperty("--pipe-fill-ratio", `${pipeFillRatio}%`);
+    scene.style.setProperty("--water-height", `${waterHeight}%`);
     scene.style.setProperty("--obstruction-ratio", `${obstructionRatio}%`);
+    const water = document.querySelector(".sim-pipe-water");
+    if (water) water.style.height = `${waterHeight}%`;
     const obstruction = document.querySelector(".sim-obstruction");
     if (obstruction) {
       obstruction.style.left = `${obstructionRatio}%`;
+    }
+    const obstructionLabel = document.querySelector(".sim-obstruction-label");
+    if (obstructionLabel) {
+      obstructionLabel.style.left = `${obstructionRatio}%`;
     }
   }
 
@@ -53,21 +72,28 @@ function updateSimulationScene(manhole) {
   const location = document.getElementById("simLocation");
   const pipeLength = document.getElementById("simPipeLength");
   const obstructionDistance = document.getElementById("simObstructionDistance");
+  const obstructionScore = document.getElementById("simObstructionScore");
   const blockageValue = document.getElementById("simBlockageValue");
   const waterLevel = document.getElementById("simWaterLevel");
+  const riskScore = document.getElementById("simRiskScore");
   const severity = document.getElementById("simSeverity");
   const statusText = document.getElementById("simStatusText");
   const lastUpdated = document.getElementById("simLastUpdated");
   const currentCalculation = document.getElementById("simCurrentCalculation");
 
-  const obstructionMeters = Math.max(
+  const obstructionMeters = Math.max(0, manhole.measuredDistance);
+  const obstructionPercent = Math.max(
     0,
-    manhole.expectedPipeLength - manhole.measuredDistance,
+    Math.min(
+      100,
+      Number(manhole.obstructionScore ?? manhole.blockagePercentage ?? 0),
+    ),
   );
   const waterPercent = Math.max(
     0,
-    Math.min(100, 100 - manhole.blockagePercentage),
+    Math.min(100, Number(manhole.waterLevelPercentage ?? 0)),
   );
+  const riskValue = Math.max(0, Math.min(100, Number(manhole.riskScore ?? 0)));
 
   if (nodeId) nodeId.textContent = manhole.nodeId;
   if (sensorId) sensorId.textContent = manhole.sensorId;
@@ -76,16 +102,19 @@ function updateSimulationScene(manhole) {
   if (pipeLength) pipeLength.textContent = `${manhole.expectedPipeLength} m`;
   if (obstructionDistance)
     obstructionDistance.textContent = `${obstructionMeters} m`;
+  if (obstructionScore) obstructionScore.textContent = `${obstructionPercent}%`;
   if (blockageValue)
-    blockageValue.textContent = `${manhole.blockagePercentage}%`;
-  if (waterLevel) waterLevel.textContent = `${waterPercent}%`;
+    blockageValue.textContent = `${Math.round(obstructionPercent)}%`;
+  if (waterLevel) waterLevel.textContent = `${Math.round(waterPercent)}%`;
+  if (riskScore) riskScore.textContent = `${Math.round(riskValue)}%`;
   if (severity) {
-    severity.textContent =
+    const severityText =
       manhole.status === "CRITICAL"
         ? "High"
         : manhole.status === "WARNING"
           ? "Moderate"
           : "Low";
+    severity.textContent = severityText;
     severity.className =
       "status-chip " +
       (manhole.status === "CRITICAL"
@@ -115,8 +144,17 @@ function updateSimulationScene(manhole) {
     lastUpdated.textContent = formatted;
   }
   if (currentCalculation) {
-    const echoTime = ((manhole.measuredDistance * 2) / 1480).toFixed(2);
-    currentCalculation.textContent = `${echoTime} ms × 1480 m/s ÷ 2 = ${manhole.measuredDistance} m`;
+    const riskScoreValue = Math.round(Number(manhole.riskScore ?? 0));
+    const obstructionScoreValue = Math.round(
+      Number(manhole.obstructionScore ?? 0),
+    );
+    const waterValue = Math.round(Number(manhole.waterLevelPercentage ?? 0));
+    currentCalculation.innerHTML = `
+      <strong>Risk Score Calculation</strong><br>
+      Risk Score = (Obstruction Score × 0.4) + (Water Level × 0.6)<br>
+      (${obstructionScoreValue} × 0.4) + (${waterValue} × 0.6)
+      = ${riskScoreValue}%
+    `;
   }
 }
 
@@ -262,20 +300,27 @@ export function initSimulationPage() {
     );
     if (selected) {
       const nextDistance = Number(e.target.value);
-      selected.measuredDistance = Number(nextDistance);
-      selected.blockagePercentage = Math.max(
-        0,
-        Math.min(
-          100,
-          Math.round((1 - nextDistance / selected.expectedPipeLength) * 100),
-        ),
+      const nextObstructionScore = calculateObstructionScore(
+        selected.expectedPipeLength,
+        nextDistance,
       );
-      selected.status =
-        selected.blockagePercentage >= 60
-          ? "CRITICAL"
-          : selected.blockagePercentage >= 30
-            ? "WARNING"
-            : "CLEAR";
+      const nextWaterLevel = calculateWaterLevel(
+        selected.expectedPipeLength,
+        nextDistance,
+        Number(selected.waterLevelPercentage ?? 0),
+      );
+      selected.measuredDistance = nextDistance;
+      selected.obstructionDistance = nextDistance;
+      selected.pipeLength = selected.expectedPipeLength;
+      selected.obstructionScore = nextObstructionScore;
+      selected.blockagePercentage = nextObstructionScore;
+      selected.waterLevelPercentage = nextWaterLevel;
+      selected.riskScore = calculateRiskScore(
+        nextObstructionScore,
+        nextWaterLevel,
+      );
+      selected.blockageSeverity = calculateSeverityLabel(selected.riskScore);
+      selected.status = calculateStatus(selected.riskScore);
       updateSimulationScene(selected);
     }
   });

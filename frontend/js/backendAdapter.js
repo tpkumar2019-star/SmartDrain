@@ -1,3 +1,12 @@
+import {
+  calculateBlockage,
+  calculateStatus,
+  calculateWaterLevel,
+  calculateRiskScore,
+  calculateSeverityLabel,
+  calculateObstructionScore,
+} from "./data.js";
+
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 function mapStatus(value) {
@@ -21,9 +30,27 @@ export function normalizeBackendManhole(item = {}) {
     : rawManholeId;
   const normalizedId = `MANHOLE_${suffix}`;
   const expectedPipeLength = Number(item.pipeLength || 100);
-  const measuredDistance = Number(item.distance || 0);
-  const blockagePercentage = Number(item.estimatedBlockage || 0);
-  const status = mapStatus(item.status);
+  const obstructionDistance = Number(
+    item.obstructionDistance ?? item.distance ?? 0,
+  );
+  const measuredDistance = obstructionDistance;
+  const obstructionScore = Number(
+    item.obstructionScore ??
+      item.estimatedBlockage ??
+      calculateObstructionScore(expectedPipeLength, measuredDistance),
+  );
+  const waterLevelPercentage = Number(
+    item.waterLevel ??
+      item.waterLevelPercentage ??
+      calculateWaterLevel(expectedPipeLength, measuredDistance),
+  );
+  const riskScore = Number(
+    item.riskScore ??
+      calculateRiskScore(obstructionScore, waterLevelPercentage),
+  );
+  const status = mapStatus(item.status || calculateStatus(riskScore));
+  const blockageSeverity =
+    item.blockageSeverity || calculateSeverityLabel(riskScore);
   const now = Date.now();
 
   return {
@@ -34,9 +61,16 @@ export function normalizeBackendManhole(item = {}) {
     area: item.location || "Unknown Zone",
     latitude: Number(item.latitude || 17.385),
     longitude: Number(item.longitude || 78.4867),
+    pipeLength: expectedPipeLength,
     expectedPipeLength,
     measuredDistance,
-    blockagePercentage,
+    obstructionDistance,
+    obstructionScore,
+    blockagePercentage: obstructionScore,
+    waterLevel: waterLevelPercentage,
+    waterLevelPercentage,
+    riskScore,
+    blockageSeverity,
     status,
     lastUpdated: item.lastUpdated
       ? new Date(item.lastUpdated).getTime() || now
@@ -46,7 +80,15 @@ export function normalizeBackendManhole(item = {}) {
       {
         t: now,
         distance: measuredDistance,
-        blockage: blockagePercentage,
+        obstructionDistance,
+        obstructionScore,
+        blockage: obstructionScore,
+        blockagePercentage: obstructionScore,
+        waterLevel: waterLevelPercentage,
+        waterLevelPercentage,
+        riskScore,
+        blockageSeverity,
+        status,
       },
     ],
   };

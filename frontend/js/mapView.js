@@ -50,7 +50,7 @@ function popupHTML(m) {
         <strong>${m.manholeId.replace("MANHOLE_", "Manhole ")}</strong>
         <span class="badge badge--${m.status.toLowerCase()}">${m.status[0]}${m.status.slice(1).toLowerCase()}</span>
       </div>
-      <div class="map-popup__row"><span>Obstruction</span><b>${m.expectedPipeLength - m.measuredDistance} m from manhole</b></div>
+      <div class="map-popup__row"><span>Obstruction</span><b>${m.measuredDistance} m from manhole</b></div>
       <div class="map-popup__row"><span>Estimated blockage</span><b>${m.blockagePercentage}%</b></div>
       <div class="map-popup__row"><span>Last updated</span><b>${timeAgo(m.lastUpdated)}</b></div>
       <button class="btn btn--primary btn--sm" data-view-details="${m.manholeId}">View Details</button>
