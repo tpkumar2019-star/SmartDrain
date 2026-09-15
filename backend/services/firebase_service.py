@@ -76,11 +76,8 @@ def _generate_seed_manholes() -> List[Dict[str, Any]]:
 
 
 def _seed_if_empty() -> None:
-    try:
-        if not firebase_db.child("manholes").get():
-            firebase_db.child("manholes").set({_m["manholeId"]: _m for _m in _generate_seed_manholes()})
-    except Exception:
-        pass
+    if not firebase_db.child("manholes").get():
+        firebase_db.child("manholes").set({_m["manholeId"]: _m for _m in _generate_seed_manholes()})
 
 
 def _normalize_manhole_data(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -110,136 +107,90 @@ def _normalize_manhole_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _read_node(node_name: str):
-    try:
-        return firebase_db.child(node_name).get()
-    except Exception:
-        return None
+    return firebase_db.child(node_name).get()
 
 
 def get_all_manholes() -> List[Dict[str, Any]]:
     _seed_if_empty()
-    try:
-        raw = _read_node("manholes")
-        if not raw:
-            return []
-        return [_normalize_manhole_data(item) for item in raw.values()]
-    except Exception:
+    raw = _read_node("manholes")
+    if not raw:
         return []
+    return [_normalize_manhole_data(item) for item in raw.values()]
 
 
 def get_manhole(manhole_id: str) -> Dict[str, Any]:
     _seed_if_empty()
-    try:
-        data = firebase_db.child("manholes").child(manhole_id).get()
-        if not data:
-            return {}
-        return _normalize_manhole_data(data)
-    except Exception:
+    data = firebase_db.child("manholes").child(manhole_id).get()
+    if not data:
         return {}
+    return _normalize_manhole_data(data)
 
 
 def upsert_manhole(manhole_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     _seed_if_empty()
-    try:
-        firebase_db.child("manholes").child(manhole_id).set(payload)
-    except Exception:
-        fallback = _read_node("manholes") or {}
-        fallback[manhole_id] = payload
-        firebase_db.child("manholes").set(fallback)
+    firebase_db.child("manholes").child(manhole_id).set(payload)
     return payload
 
 
 def record_history(manhole_id: str, payload: Dict[str, Any]) -> None:
     _seed_if_empty()
-    try:
-        history_ref = firebase_db.child("history").child(manhole_id)
-        history = history_ref.get() or []
-        if isinstance(history, dict):
-            history = list(history.values())
-        history.append(
-            {
-                "timestamp": payload["lastUpdated"],
-                "distance": payload["distance"],
-                "blockage": payload["estimatedBlockage"],
-                "waterLevel": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
-                "waterLevelPercentage": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
-                "status": payload["status"],
-            }
-        )
-        history_ref.set(history[-20:])
-    except Exception:
-        try:
-            history = _read_node("history") or {}
-            manhole_history = history.get(manhole_id, [])
-            if isinstance(manhole_history, dict):
-                manhole_history = list(manhole_history.values())
-            manhole_history.append(
-                {
-                    "timestamp": payload["lastUpdated"],
-                    "distance": payload["distance"],
-                    "blockage": payload["estimatedBlockage"],
-                    "waterLevel": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
-                    "waterLevelPercentage": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
-                    "status": payload["status"],
-                }
-            )
-            history[manhole_id] = manhole_history[-20:]
-            firebase_db.child("history").set(history)
-        except Exception:
-            pass
+    history_ref = firebase_db.child("history").child(manhole_id)
+    history = history_ref.get() or []
+    if isinstance(history, dict):
+        history = list(history.values())
+    history.append(
+        {
+            "timestamp": payload["lastUpdated"],
+            "distance": payload["distance"],
+            "blockage": payload["estimatedBlockage"],
+            "waterLevel": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
+            "waterLevelPercentage": payload.get("waterLevelPercentage", payload.get("waterLevel", 0)),
+            "status": payload["status"],
+        }
+    )
+    history_ref.set(history[-20:])
 
 
 def get_active_alerts() -> List[Dict[str, Any]]:
-    try:
-        manholes = get_all_manholes()
-        active = []
-        for mh in manholes:
-            status = str(mh.get("status", "CLEAR")).upper()
-            if status in {"WARNING", "CRITICAL"}:
-                active.append(
-                    {
-                        "manholeId": mh.get("manholeId"),
-                        "location": mh.get("location"),
-                        "status": status,
-                        "estimatedBlockage": mh.get("estimatedBlockage", 0),
-                        "obstructionDistance": mh.get("distance", 0),
-                        "waterLevel": mh.get("waterLevel", 0),
-                        "lastUpdated": mh.get("lastUpdated", datetime.now(timezone.utc).isoformat()),
-                        "severity": mh.get("blockageSeverity", "Low"),
-                    }
-                )
-        return active
-    except Exception:
-        return []
+    manholes = get_all_manholes()
+    active = []
+    for mh in manholes:
+        status = str(mh.get("status", "CLEAR")).upper()
+        if status in {"WARNING", "CRITICAL"}:
+            active.append(
+                {
+                    "manholeId": mh.get("manholeId"),
+                    "location": mh.get("location"),
+                    "status": status,
+                    "estimatedBlockage": mh.get("estimatedBlockage", 0),
+                    "obstructionDistance": mh.get("distance", 0),
+                    "waterLevel": mh.get("waterLevel", 0),
+                    "lastUpdated": mh.get("lastUpdated", datetime.now(timezone.utc).isoformat()),
+                    "severity": mh.get("blockageSeverity", "Low"),
+                }
+            )
+    return active
 
 
 def get_dashboard_summary() -> Dict[str, int]:
-    try:
-        manholes = get_all_manholes()
-        total = len(manholes)
-        clear = 0
-        warning = 0
-        critical = 0
+    manholes = get_all_manholes()
+    total = len(manholes)
+    clear = 0
+    warning = 0
+    critical = 0
 
-        for mh in manholes:
-            status = str(mh.get("status", "CLEAR")).upper()
-            if status == "CLEAR":
-                clear += 1
-            elif status == "WARNING":
-                warning += 1
-            elif status == "CRITICAL":
-                critical += 1
+    for mh in manholes:
+        status = str(mh.get("status", "CLEAR")).upper()
+        if status == "CLEAR":
+            clear += 1
+        elif status == "WARNING":
+            warning += 1
+        elif status == "CRITICAL":
+            critical += 1
 
-        return {
-            "totalManholes": total,
-            "clear": clear,
-            "warning": warning,
-            "critical": critical,
-        }
-    except Exception:
-        return {
-            "totalManholes": 0,
-            "clear": 0,
-            "warning": 0,
-            "critical": 0,
-        }
+    return {
+        "totalManholes": total,
+        "clear": clear,
+        "warning": warning,
+        "critical": critical,
+    }
